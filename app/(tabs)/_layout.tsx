@@ -1,23 +1,30 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { View } from 'react-native';
 
 function TabBarIcon(props: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
-  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
+  return <FontAwesome size={22} style={{ marginBottom: -2 }} {...props} />;
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const activeTint = colorScheme === 'dark' ? '#818cf8' : '#4f46e5';
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: activeTint,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#737373',
         tabBarStyle: {
-          borderTopWidth: 0,
+          backgroundColor: '#0A0A0A',
+          borderTopWidth: 0.5,
+          borderTopColor: '#262626',
           elevation: 0,
           shadowOpacity: 0,
+          height: 80,
+          paddingBottom: 20,
+          paddingTop: 10,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'Inter_500Medium',
+          fontSize: 11,
         },
       }}
     >
@@ -32,8 +39,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="balance"
         options={{
-          title: 'Balance',
-          tabBarIcon: ({ color }) => <TabBarIcon name="wallet" color={color} />,
+          title: 'Balances',
+          tabBarIcon: ({ color }) => <FontAwesome name="credit-card" size={20} color={color} style={{ marginBottom: -2 }} />,
           headerShown: false,
         }}
       />
@@ -41,7 +48,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="user-o" size={22} color={color} style={{ marginBottom: -2 }} />,
           headerShown: false,
         }}
       />
