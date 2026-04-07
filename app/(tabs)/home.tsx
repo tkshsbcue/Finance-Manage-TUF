@@ -3,8 +3,10 @@ import { LAYOUT } from '@/constants/layout';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+
 import AnimatedStarButton from '@/components/AnimatedStarButton';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import SkeuomorphicCard from '@/components/SkeuomorphicCard';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,37 +24,6 @@ const Greeting = React.memo(function Greeting() {
   );
 });
 
-// --- Bank Card (memoized — static content) ---
-const BankCard = React.memo(function BankCard() {
-  return (
-    <View style={s.bankCardWrapper}>
-      <LinearGradient
-        colors={['#c4b5a0', '#88c4b8', '#a8d8c8'] as const}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={s.bankCard}
-      >
-        <View style={s.bankCardTop}>
-          <Text style={s.bankName}>ADRBank</Text>
-          <View style={s.bankIcon}>
-            <FontAwesome name="refresh" size={16} color="#FFFFFF" />
-          </View>
-        </View>
-        <Text style={s.cardNumber}>8763 1111 2222 0329</Text>
-        <View style={s.bankCardBottom}>
-          <View>
-            <Text style={s.cardLabel}>Card Holder Name</Text>
-            <Text style={s.cardValue}>ALEX</Text>
-          </View>
-          <View>
-            <Text style={s.cardLabel}>Expired Date</Text>
-            <Text style={s.cardValue}>10/28</Text>
-          </View>
-        </View>
-      </LinearGradient>
-    </View>
-  );
-});
 
 // --- Expenses Toggle ---
 const ExpensesToggle = React.memo(function ExpensesToggle({ activeTab, onTabChange }: { activeTab: 'weekly' | 'monthly'; onTabChange: (tab: 'weekly' | 'monthly') => void }) {
@@ -141,7 +112,7 @@ export default function HomeScreen() {
         overScrollMode="never"
       >
         <Greeting />
-        <BankCard />
+        <SkeuomorphicCard />
         <View style={s.toggleMargin}>
           <ExpensesToggle activeTab={expenseTab} onTabChange={onTabChange} />
         </View>
@@ -163,15 +134,6 @@ const s = StyleSheet.create({
   greetingContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   greetingTitle: { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 28, letterSpacing: -0.45 },
   greetingSubtitle: { color: '#737373', fontFamily: 'Inter_400Regular', fontSize: 16, lineHeight: 24, letterSpacing: -0.31, marginTop: 4 },
-  bankCardWrapper: { paddingHorizontal: 20, paddingVertical: 16 },
-  bankCard: { width: LAYOUT.bankCardWidth, height: 218, borderRadius: 20, padding: 24, justifyContent: 'space-between', alignSelf: 'center' },
-  bankCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bankName: { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16 },
-  bankIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  cardNumber: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 24, letterSpacing: 2 },
-  bankCardBottom: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardLabel: { color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_400Regular', fontSize: 11 },
-  cardValue: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 14, marginTop: 2 },
   toggleSection: { paddingHorizontal: 20 },
   expensesTitle: { color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31, marginBottom: 14 },
   toggleContainer: { width: LAYOUT.inputWidth, height: 36, borderRadius: 14, padding: 2, backgroundColor: '#262626', alignSelf: 'center' },
