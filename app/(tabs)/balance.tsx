@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
+import { LAYOUT } from '@/constants/layout';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AnimatedStarButton from '@/components/AnimatedStarButton';
 import AnimatedEnableButton from '@/components/AnimatedEnableButton';
@@ -35,11 +36,11 @@ const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 // We want a semi-circle opening upward: left end at ~210°, right end at ~330°
 // SVG arc sweep-flag: 0 = CCW, 1 = CW. We draw CW from left to right.
 
-const GW = 300;       // canvas width
-const GH = 195;       // canvas height
+const GW = Math.min(LAYOUT.screenWidth - 40, 300);  // canvas width — responsive
+const GH = GW * 0.65;                                // canvas height — proportional
 const GCX = GW / 2;   // center x
-const GCY = 155;      // center y (pushed down so arc is in upper portion)
-const GR = 110;        // radius
+const GCY = GH * 0.8; // center y — proportional
+const GR = GW * 0.37;  // radius — proportional
 const GSW = 18;        // stroke width
 const GAP = 4;         // degrees gap between segments
 
@@ -91,34 +92,53 @@ const SEGMENTS = [
   { color: '#fcd34d', fraction: 0.20 },  // gold
 ];
 
+// Memoized static SVG — rendered once, never re-rendered during animation
+const StaticGauge = React.memo(function StaticGauge({ arcs, trackD }: { arcs: { d: string; color: string }[]; trackD: string }) {
+  return (
+    <>
+      {/* Background track — simple solid instead of expensive dasharray */}
+      <SvgPath
+        d={trackD}
+        stroke="rgba(255,255,255,0.03)"
+        strokeWidth={GSW + 10}
+        fill="none"
+        strokeLinecap="round"
+      />
+
+      {/* Colored segments */}
+      {arcs.map((arc, i) => (
+        <SvgPath
+          key={i}
+          d={arc.d}
+          stroke={arc.color}
+          strokeWidth={GSW}
+          fill="none"
+          strokeLinecap="round"
+        />
+      ))}
+    </>
+  );
+});
+
 function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: number; maxScore?: number; shouldAnimate: boolean }) {
   const normalizedScore = Math.min(Math.max(score / maxScore, 0), 1);
   const progress = useSharedValue(0);
-  const gaugeScale = useSharedValue(0.85);
-  const gaugeOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (!shouldAnimate) return;
 
-    gaugeOpacity.value = withTiming(1, { duration: 400 });
-    gaugeScale.value = withDelay(100, withSpring(1, { damping: 14, stiffness: 120, mass: 0.8 }));
-
-    progress.value = withDelay(400, withSpring(normalizedScore, {
+    // Single animation — just the indicator sweep. No scale/opacity on container.
+    progress.value = withDelay(200, withSpring(normalizedScore, {
       damping: 15, stiffness: 40, mass: 1,
     }));
   }, [shouldAnimate]);
 
-  // Score text derives from the same progress value as the dot — perfectly in sync
+  // Score text — UI thread only
   const scoreTextProps = useAnimatedProps(() => ({
     text: `${Math.round(progress.value * maxScore)}`,
   }));
 
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: gaugeOpacity.value,
-    transform: [{ scale: gaugeScale.value }],
-  }));
-
-  // Memoize all static SVG data so it never recalculates
+  // Memoize static SVG paths
   const { arcs, trackD } = useMemo(() => {
     const totalGaps = GAP * (SEGMENTS.length - 1);
     const usable = ARC_TOTAL_DEG - totalGaps;
@@ -133,7 +153,7 @@ function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: num
     return { arcs: a, trackD: svgArc(215, -35) };
   }, []);
 
-  // Single shared indicator position calc — reused by all circles
+  // Single animatedProps for indicator — one trig calc per frame
   const indicatorProps = useAnimatedProps(() => {
     const angleDeg = 215 - progress.value * ARC_TOTAL_DEG;
     const rad = (angleDeg * Math.PI) / 180;
@@ -145,41 +165,18 @@ function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: num
 
   return (
     <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-      <Animated.View style={[{ width: GW, height: GH }, containerStyle]}>
+      <View style={{ width: GW, height: GH }}>
         <Svg width={GW} height={GH} viewBox={`0 0 ${GW} ${GH}`}>
-          {/* Dotted background track */}
-          <SvgPath
-            d={trackD}
-            stroke="rgba(255,255,255,0.05)"
-            strokeWidth={GSW + 12}
-            fill="none"
-            strokeLinecap="butt"
-            strokeDasharray="2 7"
-          />
+          {/* Static arcs — memoized, zero re-renders */}
+          <StaticGauge arcs={arcs} trackD={trackD} />
 
-          {/* Colored segments */}
-          {arcs.map((arc, i) => (
-            <SvgPath
-              key={i}
-              d={arc.d}
-              stroke={arc.color}
-              strokeWidth={GSW}
-              fill="none"
-              strokeLinecap="round"
-            />
-          ))}
-
-          {/* Indicator — clean knob style */}
-          {/* Shadow ring */}
-          <AnimatedCircle animatedProps={indicatorProps} r={12} fill="rgba(0,0,0,0.4)" />
-          {/* Outer colored ring */}
+          {/* Single animated indicator — 1 animatedProps, 1 trig per frame */}
           <AnimatedCircle animatedProps={indicatorProps} r={10} fill="#0A0A0A" stroke="rgba(255,255,255,0.5)" strokeWidth={2.5} />
-          {/* Inner bright dot */}
           <AnimatedCircle animatedProps={indicatorProps} r={4.5} fill="#FFFFFF" />
         </Svg>
 
-        {/* Score number — zero re-renders, UI thread only */}
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 8, alignItems: 'center' }}>
+        {/* Score number */}
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: GH * 0.04, alignItems: 'center' }}>
           <AnimatedTextInput
             animatedProps={scoreTextProps}
             editable={false}
@@ -194,7 +191,7 @@ function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: num
             }}
           />
         </View>
-      </Animated.View>
+      </View>
 
       <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31, marginTop: 2 }}>
         Your Credit Score is average
@@ -209,7 +206,7 @@ function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: num
 // ===== BAR CHART =====
 
 const CHART_HEIGHT = 160;
-const CHART_WIDTH = 300;
+const CHART_WIDTH = LAYOUT.screenWidth - 80; // 40px padding + 40px for y-axis labels
 const BAR_DATA = [
   [300, 200, 150],
   [400, 350, 250],
@@ -230,7 +227,7 @@ const FILLS = ['url(#gradTeal)', 'url(#gradGold)', 'url(#gradGray)'];
 // Each bar is its own animated component — animates height + y on UI thread
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
-function AnimatedBar({ x, targetHeight, fill, delay, shouldAnimate }: { x: number; targetHeight: number; fill: string; delay: number; shouldAnimate: boolean }) {
+const AnimatedBar = React.memo(function AnimatedBar({ x, targetHeight, fill, delay, shouldAnimate }: { x: number; targetHeight: number; fill: string; delay: number; shouldAnimate: boolean }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -261,9 +258,9 @@ function AnimatedBar({ x, targetHeight, fill, delay, shouldAnimate }: { x: numbe
       fill={fill}
     />
   );
-}
+});
 
-function BarChart({ shouldAnimate }: { shouldAnimate: boolean }) {
+const BarChart = React.memo(function BarChart({ shouldAnimate }: { shouldAnimate: boolean }) {
   const chartOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -345,11 +342,11 @@ function BarChart({ shouldAnimate }: { shouldAnimate: boolean }) {
       </View>
     </Animated.View>
   );
-}
+});
 
 // ===== CURRENCY ITEM =====
 
-function CurrencyItem({ code, name, flag }: { code: string; name: string; flag: string }) {
+const CurrencyItem = React.memo(function CurrencyItem({ code, name, flag }: { code: string; name: string; flag: string }) {
   return (
     <LinearGradient
       colors={['#262626', '#0A0A0A']}
@@ -358,7 +355,7 @@ function CurrencyItem({ code, name, flag }: { code: string; name: string; flag: 
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        width: 398,
+        width: LAYOUT.cardWidth,
         height: 85,
         borderRadius: 14,
         borderWidth: 0.53,
@@ -382,9 +379,7 @@ function CurrencyItem({ code, name, flag }: { code: string; name: string; flag: 
       <AnimatedEnableButton />
     </LinearGradient>
   );
-}
-
-// ===== FAB =====
+});
 
 
 
@@ -407,6 +402,8 @@ export default function BalanceScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        removeClippedSubviews
+        overScrollMode="never"
       >
         <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 }}>
           <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 28, letterSpacing: -0.45 }}>

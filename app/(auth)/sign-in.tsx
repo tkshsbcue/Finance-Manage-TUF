@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { LAYOUT } from '@/constants/layout';
 import {
   View,
   Text,
@@ -32,12 +33,16 @@ export default function SignInScreen() {
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<Animated.ScrollView>(null);
 
+  const onSignInTab = useCallback(() => { Keyboard.dismiss(); setActiveTab('signin'); }, []);
+  const onSignUpTab = useCallback(() => { Keyboard.dismiss(); setActiveTab('signup'); }, []);
+  const toggleShowPassword = useCallback(() => setShowPassword(p => !p), []);
+
   // Shared values — all animations run on UI thread
   const arrowScale = useSharedValue(0);
   const arrowOpacity = useSharedValue(0);
   const tabPosition = useSharedValue(0);
   const keyboardPadding = useSharedValue(0);
-  const TAB_WIDTH = (349 - 4) / 2;
+  const TAB_WIDTH = (LAYOUT.inputWidth - 4) / 2;
 
   // Keyboard listeners — animate padding on UI thread via shared value
   useEffect(() => {
@@ -134,6 +139,8 @@ export default function SignInScreen() {
         keyboardDismissMode="interactive"
         bounces={false}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews
+        overScrollMode="never"
       >
         <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
           {/* Top Section - Logo & Welcome */}
@@ -168,7 +175,7 @@ export default function SignInScreen() {
           {/* Bottom Card Section */}
           <View
             className="self-center bg-neutral-900 rounded-3xl px-6"
-            style={{ maxWidth: 398, width: '100%', gap: 32, paddingTop: 32, paddingBottom: 48 }}
+            style={{ maxWidth: LAYOUT.cardWidth, width: '100%', gap: 32, paddingTop: 32, paddingBottom: 48 }}
           >
             {/* Header */}
             <View>
@@ -199,7 +206,7 @@ export default function SignInScreen() {
             {/* Tab Toggle */}
             <View
               className="self-center"
-              style={{ width: 349, height: 36, borderRadius: 14, padding: 2, backgroundColor: '#262626' }}
+              style={{ width: LAYOUT.inputWidth, height: 36, borderRadius: 14, padding: 2, backgroundColor: '#262626' }}
             >
               <Animated.View
                 style={[
@@ -216,7 +223,7 @@ export default function SignInScreen() {
               />
               <View style={{ flex: 1, flexDirection: 'row' }}>
                 <Pressable
-                  onPress={() => { Keyboard.dismiss(); setActiveTab('signin'); }}
+                  onPress={onSignInTab}
                   style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Animated.Text
@@ -229,7 +236,7 @@ export default function SignInScreen() {
                   </Animated.Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => { Keyboard.dismiss(); setActiveTab('signup'); }}
+                  onPress={onSignUpTab}
                   style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Animated.Text
@@ -270,7 +277,7 @@ export default function SignInScreen() {
                   fontSize: 16,
                   lineHeight: 16,
                   letterSpacing: -0.31,
-                  width: 349,
+                  width: LAYOUT.inputWidth,
                   height: 36,
                   paddingTop: 4,
                   paddingBottom: 4,
@@ -290,7 +297,7 @@ export default function SignInScreen() {
                 Password
               </Text>
               <View style={{ position: 'relative' }}>
-                <View style={{ width: 349, position: 'relative' }}>
+                <View style={{ width: LAYOUT.inputWidth, position: 'relative' }}>
                   <TextInput
                     ref={passwordRef}
                     value={password}
@@ -308,7 +315,7 @@ export default function SignInScreen() {
                       fontSize: 16,
                       lineHeight: 16,
                       letterSpacing: -0.31,
-                      width: 349,
+                      width: LAYOUT.inputWidth,
                       height: 36,
                       paddingTop: 4,
                       paddingBottom: 4,
@@ -320,7 +327,7 @@ export default function SignInScreen() {
                     }}
                   />
                   <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
+                    onPress={toggleShowPassword}
                     hitSlop={8}
                     style={{ position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center' }}
                   >
@@ -370,8 +377,9 @@ export default function SignInScreen() {
             {/* Submit Button */}
             <Pressable
               onPress={handleSubmit}
+              unstable_pressDelay={0}
               className="bg-white items-center justify-center self-center"
-              style={{ width: 349, height: 36, borderRadius: 8 }}
+              style={{ width: LAYOUT.inputWidth, height: 36, borderRadius: 8 }}
             >
               <Text
                 className="text-black"
