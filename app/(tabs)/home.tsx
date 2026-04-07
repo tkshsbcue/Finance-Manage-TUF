@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import AnimatedStarButton from '@/components/AnimatedStarButton';
+import FloatingActionButton from '@/components/FloatingActionButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,33 +11,6 @@ import Animated, {
   interpolateColor,
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
-
-// --- Header ---
-function Header() {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-          <Text style={{ color: '#000000', fontFamily: 'Inter_700Bold', fontSize: 16 }}>P</Text>
-        </View>
-        <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31 }}>PayU</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-        <Pressable>
-          <FontAwesome name="search" size={18} color="#FFFFFF" />
-        </Pressable>
-        <Pressable>
-          <View style={{ position: 'relative' }}>
-            <FontAwesome name="bell-o" size={18} color="#FFFFFF" />
-            <View style={{ position: 'absolute', top: -4, right: -6, backgroundColor: '#DC2626', borderRadius: 7, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 8, fontFamily: 'Inter_700Bold' }}>2</Text>
-            </View>
-          </View>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 // --- Greeting ---
 function Greeting() {
@@ -191,9 +165,9 @@ function ExpenseItem({ category, subtitle, amount, gradientColors }: { category:
       </View>
 
       {/* Star */}
-      <Pressable style={{ marginRight: 12 }}>
-        <FontAwesome name="star-o" size={18} color="#737373" />
-      </Pressable>
+      <View style={{ marginRight: 4 }}>
+        <AnimatedStarButton size={18} />
+      </View>
 
       {/* Amount */}
       <View style={{ backgroundColor: '#262626', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 }}>
@@ -204,47 +178,18 @@ function ExpenseItem({ category, subtitle, amount, gradientColors }: { category:
 }
 
 // --- FAB ---
-function FloatingActionButton() {
-  return (
-    <Pressable
-      style={{
-        position: 'absolute',
-        bottom: 16,
-        right: 20,
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-      }}
-    >
-      <FontAwesome name="plus" size={22} color="#0A0A0A" />
-    </Pressable>
-  );
-}
 
 // --- Main Screen ---
 export default function HomeScreen() {
   const [expenseTab, setExpenseTab] = useState<'weekly' | 'monthly'>('weekly');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Header />
-
-        {/* Divider */}
-        <View style={{ height: 0.5, backgroundColor: '#262626', marginHorizontal: 20 }} />
-
         <Greeting />
         <BankCard />
 
@@ -262,6 +207,6 @@ export default function HomeScreen() {
       </ScrollView>
 
       <FloatingActionButton />
-    </SafeAreaView>
+    </View>
   );
 }

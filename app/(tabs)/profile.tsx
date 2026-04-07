@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FloatingActionButton from '@/components/FloatingActionButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,33 +10,6 @@ import Animated, {
   Easing,
   interpolateColor,
 } from 'react-native-reanimated';
-
-// --- Header ---
-function Header() {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-          <Text style={{ color: '#000000', fontFamily: 'Inter_700Bold', fontSize: 16 }}>P</Text>
-        </View>
-        <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31 }}>PayU</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-        <Pressable>
-          <FontAwesome name="search" size={18} color="#FFFFFF" />
-        </Pressable>
-        <Pressable>
-          <View style={{ position: 'relative' }}>
-            <FontAwesome name="bell-o" size={18} color="#FFFFFF" />
-            <View style={{ position: 'absolute', top: -4, right: -6, backgroundColor: '#DC2626', borderRadius: 7, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 8, fontFamily: 'Inter_700Bold' }}>2</Text>
-            </View>
-          </View>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 // --- Profile Avatar ---
 function ProfileAvatar({ name }: { name: string }) {
@@ -258,31 +231,6 @@ function EditForm() {
   );
 }
 
-// --- FAB ---
-function FloatingActionButton() {
-  return (
-    <Pressable
-      style={{
-        position: 'absolute',
-        bottom: 16,
-        right: 20,
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-      }}
-    >
-      <FontAwesome name="plus" size={22} color="#0A0A0A" />
-    </Pressable>
-  );
-}
 
 // --- Main Screen ---
 const AnimatedScrollView = Animated.ScrollView;
@@ -324,7 +272,7 @@ export default function ProfileScreen() {
   }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <AnimatedScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
@@ -335,9 +283,6 @@ export default function ProfileScreen() {
         keyboardDismissMode="interactive"
       >
         <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-          <Header />
-          <View style={{ height: 0.5, backgroundColor: '#262626', marginHorizontal: 20 }} />
-
           <ProfileAvatar name="Alex yu" />
           <ProfileToggle activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -356,6 +301,6 @@ export default function ProfileScreen() {
       </AnimatedScrollView>
 
       <FloatingActionButton />
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,6 +1,8 @@
 import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import AnimatedStarButton from '@/components/AnimatedStarButton';
+import AnimatedEnableButton from '@/components/AnimatedEnableButton';
+import FloatingActionButton from '@/components/FloatingActionButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, {
   Path as SvgPath,
@@ -11,7 +13,8 @@ import Svg, {
   Line,
   Rect,
 } from 'react-native-svg';
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -25,33 +28,6 @@ import Animated, {
 
 const AnimatedCircle = Animated.createAnimatedComponent(SvgCircle);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
-
-// --- Header ---
-function Header() {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-          <Text style={{ color: '#000000', fontFamily: 'Inter_700Bold', fontSize: 16 }}>P</Text>
-        </View>
-        <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31 }}>PayU</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-        <Pressable>
-          <FontAwesome name="search" size={18} color="#FFFFFF" />
-        </Pressable>
-        <Pressable>
-          <View style={{ position: 'relative' }}>
-            <FontAwesome name="bell-o" size={18} color="#FFFFFF" />
-            <View style={{ position: 'absolute', top: -4, right: -6, backgroundColor: '#DC2626', borderRadius: 7, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 8, fontFamily: 'Inter_700Bold' }}>2</Text>
-            </View>
-          </View>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 // ===== CREDIT SCORE GAUGE =====
 
@@ -115,21 +91,22 @@ const SEGMENTS = [
   { color: '#fcd34d', fraction: 0.20 },  // gold
 ];
 
-function CreditScoreGauge({ score, maxScore = 850 }: { score: number; maxScore?: number }) {
+function CreditScoreGauge({ score, maxScore = 850, shouldAnimate }: { score: number; maxScore?: number; shouldAnimate: boolean }) {
   const normalizedScore = Math.min(Math.max(score / maxScore, 0), 1);
   const progress = useSharedValue(0);
   const gaugeScale = useSharedValue(0.85);
   const gaugeOpacity = useSharedValue(0);
 
   useEffect(() => {
+    if (!shouldAnimate) return;
+
     gaugeOpacity.value = withTiming(1, { duration: 400 });
     gaugeScale.value = withDelay(100, withSpring(1, { damping: 14, stiffness: 120, mass: 0.8 }));
 
     progress.value = withDelay(400, withSpring(normalizedScore, {
       damping: 15, stiffness: 40, mass: 1,
     }));
-
-  }, [normalizedScore, score]);
+  }, [shouldAnimate]);
 
   // Score text derives from the same progress value as the dot — perfectly in sync
   const scoreTextProps = useAnimatedProps(() => ({
@@ -253,15 +230,16 @@ const FILLS = ['url(#gradTeal)', 'url(#gradGold)', 'url(#gradGray)'];
 // Each bar is its own animated component — animates height + y on UI thread
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
-function AnimatedBar({ x, targetHeight, fill, delay }: { x: number; targetHeight: number; fill: string; delay: number }) {
+function AnimatedBar({ x, targetHeight, fill, delay, shouldAnimate }: { x: number; targetHeight: number; fill: string; delay: number; shouldAnimate: boolean }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
+    if (!shouldAnimate) return;
     progress.value = withDelay(
       delay,
       withSpring(1, { damping: 12, stiffness: 80, mass: 0.6 })
     );
-  }, []);
+  }, [shouldAnimate]);
 
   const barProps = useAnimatedProps(() => {
     const h = targetHeight * progress.value;
@@ -285,12 +263,13 @@ function AnimatedBar({ x, targetHeight, fill, delay }: { x: number; targetHeight
   );
 }
 
-function BarChart() {
+function BarChart({ shouldAnimate }: { shouldAnimate: boolean }) {
   const chartOpacity = useSharedValue(0);
 
   useEffect(() => {
+    if (!shouldAnimate) return;
     chartOpacity.value = withTiming(1, { duration: 500 });
-  }, []);
+  }, [shouldAnimate]);
 
   const chartStyle = useAnimatedStyle(() => ({
     opacity: chartOpacity.value,
@@ -348,7 +327,7 @@ function BarChart() {
             })}
 
             {bars.map((bar) => (
-              <AnimatedBar key={bar.key} x={bar.x} targetHeight={bar.height} fill={bar.fill} delay={bar.delay} />
+              <AnimatedBar key={bar.key} x={bar.x} targetHeight={bar.height} fill={bar.fill} delay={bar.delay} shouldAnimate={shouldAnimate} />
             ))}
           </Svg>
         </View>
@@ -397,67 +376,38 @@ function CurrencyItem({ code, name, flag }: { code: string; name: string; flag: 
         <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 24, letterSpacing: -0.31 }}>{code}</Text>
         <Text style={{ color: '#737373', fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 2 }}>{name}</Text>
       </View>
-      <Pressable style={{ marginRight: 14 }}>
-        <FontAwesome name="star-o" size={18} color="#737373" />
-      </Pressable>
-      <Pressable
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: '#262626',
-          borderRadius: 8,
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          gap: 4,
-        }}
-      >
-        <FontAwesome name="plus" size={11} color="#FFFFFF" />
-        <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_500Medium', fontSize: 13 }}>Enable</Text>
-      </Pressable>
+      <View style={{ marginRight: 6 }}>
+        <AnimatedStarButton size={18} />
+      </View>
+      <AnimatedEnableButton />
     </LinearGradient>
   );
 }
 
 // ===== FAB =====
 
-function FloatingActionButton() {
-  return (
-    <Pressable
-      style={{
-        position: 'absolute',
-        bottom: 16,
-        right: 20,
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-      }}
-    >
-      <FontAwesome name="plus" size={22} color="#0A0A0A" />
-    </Pressable>
-  );
-}
+
 
 // ===== MAIN SCREEN =====
 
 export default function BalanceScreen() {
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasAnimated) {
+        setHasAnimated(true);
+      }
+    }, [hasAnimated])
+  );
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Header />
-        <View style={{ height: 0.5, backgroundColor: '#262626', marginHorizontal: 20 }} />
-
         <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 }}>
           <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 28, letterSpacing: -0.45 }}>
             Your Balances
@@ -467,7 +417,7 @@ export default function BalanceScreen() {
           </Text>
         </View>
 
-        <CreditScoreGauge score={660} />
+        <CreditScoreGauge score={660} shouldAnimate={hasAnimated} />
 
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
           <Text style={{ color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 24, letterSpacing: -0.31 }}>
@@ -477,12 +427,12 @@ export default function BalanceScreen() {
 
         <CurrencyItem code="CAD" name="Canadian Dollar" flag="🇨🇦" />
 
-        <BarChart />
+        <BarChart shouldAnimate={hasAnimated} />
 
         <View style={{ height: 80 }} />
       </ScrollView>
 
       <FloatingActionButton />
-    </SafeAreaView>
+    </View>
   );
 }
