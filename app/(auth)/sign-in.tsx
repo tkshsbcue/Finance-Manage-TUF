@@ -30,7 +30,6 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const scrollRef = useRef<Animated.ScrollView>(null);
 
@@ -39,18 +38,22 @@ export default function SignInScreen() {
   const toggleShowPassword = useCallback(() => setShowPassword(p => !p), []);
 
   // Shared values — all animations run on UI thread
-  const arrowScale = useSharedValue(0);
-  const arrowOpacity = useSharedValue(0);
   const tabPosition = useSharedValue(0);
   const keyboardPadding = useSharedValue(0);
   // Toggle is width:'100%' inside card (cardWidth - 48px padding). Each tab = half minus toggle padding.
   const TOGGLE_INNER = LAYOUT.cardWidth - 48 - 4;
   const TAB_WIDTH = TOGGLE_INNER / 2;
 
-  // Android: animated spacer for keyboard. iOS: handled by KeyboardAvoidingView.
   useEffect(() => {
-    if (Platform.OS === 'ios') return; // iOS uses KeyboardAvoidingView
+    if (Platform.OS === 'ios') {
+      // iOS: KeyboardAvoidingView handles layout, but we still need to auto-scroll
+      const showSub = Keyboard.addListener('keyboardWillShow', () => {
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+      });
+      return () => showSub.remove();
+    }
 
+    // Android: animated spacer for keyboard
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       keyboardPadding.value = withTiming(e.endCoordinates.height, {
         duration: 200,
@@ -90,21 +93,6 @@ export default function SignInScreen() {
     color: interpolateColor(tabPosition.value, [0, 1], ['#a3a3a3', '#000000']),
   }));
 
-  // Arrow button animation
-  useEffect(() => {
-    if (passwordFocused && password.length > 0) {
-      arrowScale.value = withSpring(1, { damping: 12, stiffness: 180 });
-      arrowOpacity.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
-    } else {
-      arrowScale.value = withTiming(0, { duration: 150 });
-      arrowOpacity.value = withTiming(0, { duration: 150 });
-    }
-  }, [passwordFocused, password]);
-
-  const arrowAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: arrowScale.value }],
-    opacity: arrowOpacity.value,
-  }));
 
   // Animated spacer that expands when keyboard shows
   const spacerStyle = useAnimatedStyle(() => ({
@@ -116,9 +104,6 @@ export default function SignInScreen() {
     router.replace('/(tabs)/home');
   }, [router]);
 
-  const handlePasswordFocus = useCallback(() => {
-    setPasswordFocused(true);
-  }, []);
 
   return (
     <LinearGradient
@@ -307,8 +292,6 @@ export default function SignInScreen() {
                   secureTextEntry={!showPassword}
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
-                  onFocus={handlePasswordFocus}
-                  onBlur={() => setPasswordFocused(false)}
                   className="bg-neutral-800 text-white"
                   style={{
                     fontFamily: 'Inter_400Regular',
@@ -338,22 +321,6 @@ export default function SignInScreen() {
                   />
                 </Pressable>
 
-                {/* Arrow submit — absolutely positioned outside the box, no layout impact */}
-                <Animated.View style={[{ position: 'absolute', right: -46, top: 0 }, arrowAnimatedStyle]}>
-                  <Pressable
-                    onPress={handleSubmit}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: '#FAFAFA',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <FontAwesome name="arrow-right" size={16} color="#0A0A0A" />
-                  </Pressable>
-                </Animated.View>
               </View>
 
               {activeTab === 'signin' && (
