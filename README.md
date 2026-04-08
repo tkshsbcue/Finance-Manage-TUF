@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/646cd15e-47de-423e-931d-66337b23c4dc
 
 ### Android
 
-https://github.com/tkshsbcue/Finance-Manage-TUF/issues/2#issue-4224872181
+https://github.com/user-attachments/assets/b95d3cff-d124-49cf-bcae-3c0c3e1a7480
 
 ## Tech Stack
 
