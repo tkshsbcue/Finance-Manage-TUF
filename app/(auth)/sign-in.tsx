@@ -7,6 +7,7 @@ import {
   Pressable,
   Keyboard,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,34 +43,30 @@ export default function SignInScreen() {
   const arrowOpacity = useSharedValue(0);
   const tabPosition = useSharedValue(0);
   const keyboardPadding = useSharedValue(0);
-  const TAB_WIDTH = (LAYOUT.inputWidth - 4) / 2;
+  // Toggle is width:'100%' inside card (cardWidth - 48px padding). Each tab = half minus toggle padding.
+  const TOGGLE_INNER = LAYOUT.cardWidth - 48 - 4;
+  const TAB_WIDTH = TOGGLE_INNER / 2;
 
-  // Keyboard listeners — animate padding on UI thread via shared value
+  // Android: animated spacer for keyboard. iOS: handled by KeyboardAvoidingView.
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    if (Platform.OS === 'ios') return; // iOS uses KeyboardAvoidingView
 
-    const showSub = Keyboard.addListener(showEvent, (e) => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       keyboardPadding.value = withTiming(e.endCoordinates.height, {
-        duration: Platform.OS === 'ios' ? 250 : 200,
+        duration: 200,
         easing: Easing.out(Easing.cubic),
       });
-      setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, Platform.OS === 'ios' ? 50 : 150);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
     });
 
-    const hideSub = Keyboard.addListener(hideEvent, () => {
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       keyboardPadding.value = withTiming(0, {
-        duration: Platform.OS === 'ios' ? 250 : 200,
+        duration: 200,
         easing: Easing.out(Easing.cubic),
       });
     });
 
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   // Tab slide animation
@@ -131,6 +128,10 @@ export default function SignInScreen() {
       style={{ flex: 1, backgroundColor: '#0A0A0A' }}
     >
     <SafeAreaView className="flex-1">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
       <AnimatedScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
@@ -139,7 +140,7 @@ export default function SignInScreen() {
         keyboardDismissMode="interactive"
         bounces={false}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews
+        removeClippedSubviews={Platform.OS === 'android'}
         overScrollMode="never"
       >
         <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
@@ -174,8 +175,8 @@ export default function SignInScreen() {
 
           {/* Bottom Card Section */}
           <View
-            className="self-center bg-neutral-900 rounded-3xl px-6"
-            style={{ maxWidth: LAYOUT.cardWidth, width: '100%', gap: 32, paddingTop: 32, paddingBottom: 48 }}
+            className="self-center bg-neutral-900 rounded-3xl"
+            style={{ width: LAYOUT.cardWidth, paddingHorizontal: 24, gap: 32, paddingTop: 32, paddingBottom: 48 }}
           >
             {/* Header */}
             <View>
@@ -206,7 +207,7 @@ export default function SignInScreen() {
             {/* Tab Toggle */}
             <View
               className="self-center"
-              style={{ width: LAYOUT.inputWidth, height: 36, borderRadius: 14, padding: 2, backgroundColor: '#262626' }}
+              style={{ width: '100%', height: 36, borderRadius: 14, padding: 2, backgroundColor: '#262626' }}
             >
               <Animated.View
                 style={[
@@ -277,7 +278,7 @@ export default function SignInScreen() {
                   fontSize: 16,
                   lineHeight: 16,
                   letterSpacing: -0.31,
-                  width: LAYOUT.inputWidth,
+                  width: '100%',
                   height: 36,
                   paddingTop: 4,
                   paddingBottom: 4,
@@ -296,56 +297,49 @@ export default function SignInScreen() {
               >
                 Password
               </Text>
-              <View style={{ position: 'relative' }}>
-                <View style={{ width: LAYOUT.inputWidth, position: 'relative' }}>
-                  <TextInput
-                    ref={passwordRef}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#525252"
-                    secureTextEntry={!showPassword}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSubmit}
-                    onFocus={handlePasswordFocus}
-                    onBlur={() => setPasswordFocused(false)}
-                    className="bg-neutral-800 text-white"
-                    style={{
-                      fontFamily: 'Inter_400Regular',
-                      fontSize: 16,
-                      lineHeight: 16,
-                      letterSpacing: -0.31,
-                      width: LAYOUT.inputWidth,
-                      height: 36,
-                      paddingTop: 4,
-                      paddingBottom: 4,
-                      paddingLeft: 12,
-                      paddingRight: 40,
-                      borderRadius: 8,
-                      borderWidth: 0.53,
-                      borderColor: '#404040',
-                    }}
-                  />
-                  <Pressable
-                    onPress={toggleShowPassword}
-                    hitSlop={8}
-                    style={{ position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center' }}
-                  >
-                    <FontAwesome
-                      name={showPassword ? 'eye-slash' : 'eye'}
-                      size={18}
-                      color="#737373"
-                    />
-                  </Pressable>
-                </View>
-
-                {/* Arrow submit button - appears when typing password */}
-                <Animated.View
-                  style={[
-                    { position: 'absolute', right: -52, top: 0 },
-                    arrowAnimatedStyle,
-                  ]}
+              <View style={{ width: '100%', position: 'relative' }}>
+                <TextInput
+                  ref={passwordRef}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#525252"
+                  secureTextEntry={!showPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
+                  onFocus={handlePasswordFocus}
+                  onBlur={() => setPasswordFocused(false)}
+                  className="bg-neutral-800 text-white"
+                  style={{
+                    fontFamily: 'Inter_400Regular',
+                    fontSize: 16,
+                    lineHeight: 16,
+                    letterSpacing: -0.31,
+                    width: '100%',
+                    height: 36,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    paddingLeft: 12,
+                    paddingRight: 40,
+                    borderRadius: 8,
+                    borderWidth: 0.53,
+                    borderColor: '#404040',
+                  }}
+                />
+                <Pressable
+                  onPress={toggleShowPassword}
+                  hitSlop={8}
+                  style={{ position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center' }}
                 >
+                  <FontAwesome
+                    name={showPassword ? 'eye-slash' : 'eye'}
+                    size={18}
+                    color="#737373"
+                  />
+                </Pressable>
+
+                {/* Arrow submit — absolutely positioned outside the box, no layout impact */}
+                <Animated.View style={[{ position: 'absolute', right: -46, top: 0 }, arrowAnimatedStyle]}>
                   <Pressable
                     onPress={handleSubmit}
                     style={{
@@ -379,7 +373,7 @@ export default function SignInScreen() {
               onPress={handleSubmit}
               unstable_pressDelay={0}
               className="bg-white items-center justify-center self-center"
-              style={{ width: LAYOUT.inputWidth, height: 36, borderRadius: 8 }}
+              style={{ width: '100%', height: 36, borderRadius: 8 }}
             >
               <Text
                 className="text-black"
@@ -390,10 +384,11 @@ export default function SignInScreen() {
             </Pressable>
           </View>
 
-          {/* Animated spacer — grows/shrinks with keyboard, no re-renders */}
-          <Animated.View style={spacerStyle} />
+          {/* Android: animated spacer for keyboard */}
+          {Platform.OS === 'android' && <Animated.View style={spacerStyle} />}
         </Pressable>
       </AnimatedScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
     </LinearGradient>
   );
