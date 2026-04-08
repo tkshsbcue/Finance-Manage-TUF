@@ -199,7 +199,7 @@ Then scan the QR code with **Expo Go** app ([Android](https://play.google.com/st
 
 ## Download APK
 
-> **[Download Latest APK]()**
+> **[Download Latest APK](https://drive.google.com/drive/folders/1gg7hC4YVy578mr7Zjvhuuv5UG3jk2A0-?usp=sharing)**
 >
 > *Direct download link for Android. No build setup required — just install and run.*
 
